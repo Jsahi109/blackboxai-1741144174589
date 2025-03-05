@@ -1,0 +1,221 @@
+<div class="container-fluid py-4">
+    <!-- Analytics Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Data Analytics</h4>
+                    <small class="text-muted">Detailed analysis of your data</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Trends -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Monthly Trends</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="monthlyTrendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor Performance -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Vendor Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover data-table">
+                            <thead>
+                                <tr>
+                                    <th>Vendor</th>
+                                    <th>Total Records</th>
+                                    <th>Phone Completeness</th>
+                                    <th>Address Completeness</th>
+                                    <th>Performance Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% analytics.vendorMetrics.forEach(vendor => { %>
+                                    <tr>
+                                        <td><%= vendor.vendor_name %></td>
+                                        <td><%= vendor.total_records %></td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" style="width: <%= (vendor.valid_phone/vendor.total_records*100).toFixed(1) %>%">
+                                                    <%= (vendor.valid_phone/vendor.total_records*100).toFixed(1) %>%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: <%= (vendor.valid_address/vendor.total_records*100).toFixed(1) %>%">
+                                                    <%= (vendor.valid_address/vendor.total_records*100).toFixed(1) %>%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <% 
+                                                const score = ((vendor.valid_phone + vendor.valid_address)/(2*vendor.total_records)*100).toFixed(1);
+                                                let badgeClass = 'badge-danger';
+                                                if(score > 80) badgeClass = 'badge-success';
+                                                else if(score > 60) badgeClass = 'badge-warning';
+                                            %>
+                                            <span class="badge <%= badgeClass %>"><%= score %>%</span>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Data Quality Overview</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="qualityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Export Analytics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <button onclick="exportData('pdf')" class="btn btn-danger btn-block">
+                                <i class="bi bi-file-pdf"></i> Export as PDF
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button onclick="exportData('excel')" class="btn btn-success btn-block">
+                                <i class="bi bi-file-excel"></i> Export as Excel
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button onclick="exportData('csv')" class="btn btn-primary btn-block">
+                                <i class="bi bi-file-text"></i> Export as CSV
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button onclick="window.print()" class="btn btn-secondary btn-block">
+                                <i class="bi bi-printer"></i> Print Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Monthly Trends Chart
+        const monthlyData = JSON.parse('<%- JSON.stringify(analytics.monthlyTrends) %>');
+        new Chart(document.getElementById('monthlyTrendsChart'), {
+            type: 'line',
+            data: {
+                labels: monthlyData.map(d => d.month),
+                datasets: [
+                    {
+                        label: 'Total Records',
+                        data: monthlyData.map(d => d.total_records),
+                        borderColor: '#3498db',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Unique Vendors',
+                        data: monthlyData.map(d => d.unique_vendors),
+                        borderColor: '#2ecc71',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Monthly Upload Trends'
+                    }
+                }
+            }
+        });
+
+        // Data Quality Chart
+        const vendorMetrics = JSON.parse('<%- JSON.stringify(analytics.vendorMetrics) %>');
+        const avgPhoneCompleteness = vendorMetrics.reduce((acc, v) => acc + (v.valid_phone/v.total_records), 0) / vendorMetrics.length * 100;
+        const avgAddressCompleteness = vendorMetrics.reduce((acc, v) => acc + (v.valid_address/v.total_records), 0) / vendorMetrics.length * 100;
+
+        new Chart(document.getElementById('qualityChart'), {
+            type: 'radar',
+            data: {
+                labels: ['Phone Completeness', 'Address Completeness', 'Vendor Participation', 'Data Freshness', 'Format Compliance'],
+                datasets: [{
+                    label: 'Current Score',
+                    data: [
+                        avgPhoneCompleteness,
+                        avgAddressCompleteness,
+                        90, // Example values
+                        85,
+                        95
+                    ],
+                    fill: true,
+                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                    borderColor: '#3498db',
+                    pointBackgroundColor: '#3498db',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#3498db'
+                }]
+            },
+            options: {
+                elements: {
+                    line: {
+                        borderWidth: 3
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                }
+            }
+        });
+
+        // Initialize DataTable
+        $('.data-table').DataTable({
+            responsive: true,
+            order: [[4, 'desc']]
+        });
+    });
+</script>
