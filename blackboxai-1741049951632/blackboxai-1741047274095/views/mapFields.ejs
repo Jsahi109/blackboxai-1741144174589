@@ -1,0 +1,201 @@
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Map CSV Fields</h4>
+                    <span class="badge bg-primary">Step 2 of 2</span>
+                </div>
+                <div class="card-body">
+                    <% if (error) { %>
+                        <div class="alert alert-danger">
+                            <%= error %>
+                        </div>
+                    <% } %>
+                    <form action="/upload/map" method="post">
+                        <input type="hidden" name="fileId" value="<%= fileId %>">
+                        <input type="hidden" name="vendorName" value="<%= vendorName %>">
+                        
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading mb-2">Required Fields:</h6>
+                            <ul class="mb-0">
+                                <li><code>phone1</code> - Primary phone number (required)</li>
+                                <li>At least one field must be mapped</li>
+                            </ul>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 30%">CSV Column</th>
+                                        <th style="width: 40%">Map To</th>
+                                        <th style="width: 30%">Sample Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if (csvHeaders && csvHeaders.length > 0) { %>
+                                        <% csvHeaders.forEach((header, index) => { %>
+                                            <tr>
+                                                <td>
+                                                    <code class="text-primary"><%= header %></code>
+                                                </td>
+                                                <td>
+                                                    <select name="mapping[<%= header %>]" class="form-select">
+                                                        <option value="">Do not import</option>
+                                                        <% columnNames.forEach(column => { %>
+                                                            <option value="<%= column %>" 
+                                                                <%= header.toLowerCase() === column.toLowerCase() ? 'selected' : '' %>>
+                                                                <%= column.charAt(0).toUpperCase() + column.slice(1) %>
+                                                                <% if (column === 'phone1') { %>
+                                                                    (Required)
+                                                                <% } %>
+                                                            </option>
+                                                        <% }); %>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <% if (sampleData && sampleData[header]) { %>
+                                                        <small class="text-muted"><%= sampleData[header] %></small>
+                                                    <% } else { %>
+                                                        <small class="text-muted">No sample data</small>
+                                                    <% } %>
+                                                </td>
+                                            </tr>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted py-4">
+                                                <i class="bi bi-exclamation-circle me-2"></i>
+                                                No CSV headers found
+                                            </td>
+                                        </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <a href="/upload" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Back to Upload
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check2"></i>
+                                Confirm Mapping
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">File Details</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">File Name</dt>
+                        <dd class="col-sm-8 text-break"><%= originalFilename %></dd>
+
+                        <dt class="col-sm-4">Vendor</dt>
+                        <dd class="col-sm-8"><%= vendorName %></dd>
+
+                        <dt class="col-sm-4">Total Rows</dt>
+                        <dd class="col-sm-8"><%= totalRows.toLocaleString() %></dd>
+
+                        <dt class="col-sm-4">Columns</dt>
+                        <dd class="col-sm-8"><%= csvHeaders ? csvHeaders.length : 0 %></dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Fields</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <% columnNames.forEach(column => { %>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <code><%= column %></code>
+                                    <% if (column === 'phone1') { %>
+                                        <span class="badge bg-danger ms-1">Required</span>
+                                    <% } %>
+                                </div>
+                                <small class="text-muted">
+                                    <%= getFieldDescription(column) %>
+                                </small>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Prevent duplicate mappings
+    const selects = document.querySelectorAll('select[name^="mapping"]');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            const selectedValue = this.value;
+            if (!selectedValue) return;
+
+            selects.forEach(otherSelect => {
+                if (otherSelect !== this && otherSelect.value === selectedValue) {
+                    otherSelect.value = '';
+                }
+            });
+        });
+    });
+
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        const phone1Mapped = Array.from(selects).some(select => select.value === 'phone1');
+        
+        if (!phone1Mapped) {
+            event.preventDefault();
+            alert('You must map a column to phone1');
+            return;
+        }
+
+        const hasMapping = Array.from(selects).some(select => select.value);
+        if (!hasMapping) {
+            event.preventDefault();
+            alert('You must map at least one column');
+            return;
+        }
+    });
+});
+
+// Helper function to get field descriptions
+function getFieldDescription(field) {
+    const descriptions = {
+        phone1: 'Primary phone',
+        phone2: 'Secondary phone',
+        phone3: 'Additional phone',
+        phone4: 'Additional phone',
+        email: 'Email address',
+        first_name: 'First name',
+        last_name: 'Last name',
+        address1: 'Primary address',
+        address2: 'Secondary address',
+        city: 'City name',
+        state: 'State/Province',
+        county: 'County name',
+        region: 'Region name',
+        zipcode: 'Postal code',
+        lat: 'Latitude',
+        lon: 'Longitude'
+    };
+    return descriptions[field] || field;
+}
+</script>
