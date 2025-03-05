@@ -1,0 +1,87 @@
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Upload CSV File</h4>
+                    <small class="text-muted">Upload your data file for processing</small>
+                </div>
+                <div class="card-body">
+                    <% if (error) { %>
+                        <div class="alert alert-danger">
+                            <%= error %>
+                        </div>
+                    <% } %>
+                    <form action="/upload" method="post" enctype="multipart/form-data">
+                        <div class="form-group mb-3">
+                            <label for="csvFile">Select CSV File:</label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="csvFile" name="csvFile" accept=".csv" required>
+                            </div>
+                            <small class="form-text text-muted">Only CSV files are supported</small>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="vendorName">Vendor Name:</label>
+                            <input type="text" class="form-control" id="vendorName" name="vendorName" required>
+                            <small class="form-text text-muted">Enter the name of the data vendor</small>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Upload
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sample Format Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Sample Format</h5>
+                </div>
+                <div class="card-body">
+                    <p>Your CSV file should follow this format:</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                    <th>Phone</th>
+                                    <th>Address</th>
+                                    <th>City</th>
+                                    <th>State</th>
+                                    <th>Region</th>
+                                    <th>Zipcode</th>
+                                    <th>Latitude</th>
+                                    <th>Longitude</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>John</td>
+                                    <td>Doe</td>
+                                    <td>123-456-7890</td>
+                                    <td>123 Main St</td>
+                                    <td>San Francisco</td>
+                                    <td>CA</td>
+                                    <td>Bay Area</td>
+                                    <td>94105</td>
+                                    <td>37.7749</td>
+                                    <td>-122.4194</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3">
+                        <a href="/sample.csv" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-download"></i> Download Sample CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
