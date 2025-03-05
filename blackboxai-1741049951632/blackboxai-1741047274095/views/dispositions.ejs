@@ -1,0 +1,197 @@
+<div class="container mt-4">
+    <div class="row">
+        <!-- Upload Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Upload Dispositions</h4>
+                </div>
+                <div class="card-body">
+                    <% if (error) { %>
+                        <div class="alert alert-danger">
+                            <%= error %>
+                        </div>
+                    <% } %>
+                    <% if (success) { %>
+                        <div class="alert alert-success">
+                            <%= success %>
+                        </div>
+                    <% } %>
+                    <form action="/dispositions/upload" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="csvFile" class="form-label">Select CSV File</label>
+                            <input type="file" class="form-control" id="csvFile" name="csvFile" accept=".csv" required>
+                            <small class="text-muted">Only CSV files are supported</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6>CSV Format Requirements:</h6>
+                            <ul class="mb-0">
+                                <li>Required columns: <code>phone_number</code>, <code>disposition_type</code></li>
+                                <li>Optional columns: <code>notes</code></li>
+                                <li>Valid disposition types:
+                                    <% if (dispositionTypes && dispositionTypes.length > 0) { %>
+                                        <code><%= dispositionTypes.map(t => t.name).join(', ') %></code>
+                                    <% } %>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Upload Dispositions
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sample Format -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Sample CSV Format</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>phone_number</th>
+                                    <th>disposition_type</th>
+                                    <th>notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1234567890</td>
+                                    <td>DNC</td>
+                                    <td>Customer requested no calls</td>
+                                </tr>
+                                <tr>
+                                    <td>9876543210</td>
+                                    <td>Callback</td>
+                                    <td>Call back next week</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disposition Stats -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Disposition Statistics</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Count</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (stats && stats.length > 0) { %>
+                                    <% stats.forEach(stat => { %>
+                                        <tr>
+                                            <td>
+                                                <%= stat.disposition_type %>
+                                                <br>
+                                                <small class="text-muted"><%= stat.description %></small>
+                                            </td>
+                                            <td><%= stat.count %></td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    <%= new Date(stat.last_updated).toLocaleString() %>
+                                                </small>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">
+                                            No disposition statistics available
+                                        </td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Delete -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Bulk Delete</h5>
+                </div>
+                <div class="card-body">
+                    <form id="bulkDeleteForm">
+                        <div class="mb-3">
+                            <label for="phoneNumbers" class="form-label">Phone Numbers</label>
+                            <textarea class="form-control" id="phoneNumbers" rows="4" placeholder="Enter phone numbers to delete (one per line)"></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Dispositions
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle bulk delete form submission
+    const bulkDeleteForm = document.getElementById('bulkDeleteForm');
+    bulkDeleteForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const phoneNumbers = document.getElementById('phoneNumbers')
+            .value
+            .split('\n')
+            .map(num => num.trim())
+            .filter(num => num);
+
+        if (phoneNumbers.length === 0) {
+            alert('Please enter at least one phone number');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete dispositions for ${phoneNumbers.length} phone numbers?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/dispositions', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ phoneNumbers })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('phoneNumbers').value = '';
+                // Refresh page to update stats
+                location.reload();
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    });
+});
+</script>
