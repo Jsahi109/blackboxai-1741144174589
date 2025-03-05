@@ -1,0 +1,247 @@
+<div class="container-fluid mt-4">
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card h-100 border-primary">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Records</h6>
+                    <h2 class="card-title mb-0"><%= stats.totalRecords %></h2>
+                    <div class="small text-success mt-2">
+                        <i class="bi bi-arrow-up"></i>
+                        <%= stats.recordsGrowth %>% from last month
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-success">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Active Vendors</h6>
+                    <h2 class="card-title mb-0"><%= stats.activeVendors %></h2>
+                    <div class="small text-muted mt-2">
+                        <%= stats.totalVendors %> total vendors
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-info">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Dispositions Today</h6>
+                    <h2 class="card-title mb-0"><%= stats.todayDispositions %></h2>
+                    <div class="small text-success mt-2">
+                        <i class="bi bi-arrow-up"></i>
+                        <%= stats.dispositionsGrowth %>% from yesterday
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Duplicate Rate</h6>
+                    <h2 class="card-title mb-0"><%= stats.duplicateRate %>%</h2>
+                    <div class="small text-danger mt-2">
+                        <%= stats.totalDuplicates %> total duplicates
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Activity -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Activity</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary">Today</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary active">Week</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary">Month</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Activity</th>
+                                    <th>Details</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% recentActivity.forEach(activity => { %>
+                                    <tr>
+                                        <td>
+                                            <% if (activity.type === 'upload') { %>
+                                                <span class="badge bg-primary">
+                                                    <i class="bi bi-upload"></i> Upload
+                                                </span>
+                                            <% } else if (activity.type === 'download') { %>
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-download"></i> Download
+                                                </span>
+                                            <% } else if (activity.type === 'disposition') { %>
+                                                <span class="badge bg-info">
+                                                    <i class="bi bi-telephone"></i> Disposition
+                                                </span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <%= activity.description %>
+                                            <% if (activity.metadata) { %>
+                                                <br>
+                                                <small class="text-muted"><%= activity.metadata %></small>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <div><%= activity.timeFormatted %></div>
+                                            <small class="text-muted"><%= activity.dateFormatted %></small>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Geographic Distribution -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Geographic Distribution</h5>
+                    <select class="form-select form-select-sm w-auto">
+                        <option>By Region</option>
+                        <option>By State</option>
+                        <option>By City</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="geoDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-md-4">
+            <!-- Disposition Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Disposition Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container mb-3" style="height: 200px;">
+                        <canvas id="dispositionChart"></canvas>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <% dispositionSummary.forEach(disp => { %>
+                                    <tr>
+                                        <td>
+                                            <span class="badge" style="background-color: <%= disp.color %>">
+                                                <%= disp.name %>
+                                            </span>
+                                        </td>
+                                        <td class="text-end"><%= disp.count %></td>
+                                        <td class="text-end"><%= disp.percentage %>%</td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vendor Performance -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Vendor Performance</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <% vendorPerformance.forEach(vendor => { %>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong><%= vendor.name %></strong>
+                                    <span class="badge bg-<%= vendor.trend === 'up' ? 'success' : 'danger' %>">
+                                        <i class="bi bi-arrow-<%= vendor.trend %>"></i>
+                                        <%= vendor.change %>%
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-primary" 
+                                         role="progressbar" 
+                                         style="width: <%= vendor.successRate %>%"
+                                         aria-valuenow="<%= vendor.successRate %>" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <div class="small text-muted mt-1">
+                                    Success Rate: <%= vendor.successRate %>%
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Disposition Chart
+    const dispositionCtx = document.getElementById('dispositionChart').getContext('2d');
+    new Chart(dispositionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: <%- JSON.stringify(dispositionSummary.map(d => d.name)) %>,
+            datasets: [{
+                data: <%- JSON.stringify(dispositionSummary.map(d => d.count)) %>,
+                backgroundColor: <%- JSON.stringify(dispositionSummary.map(d => d.color)) %>
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            cutout: '70%'
+        }
+    });
+
+    // Geographic Distribution Chart
+    const geoCtx = document.getElementById('geoDistributionChart').getContext('2d');
+    new Chart(geoCtx, {
+        type: 'bar',
+        data: {
+            labels: <%- JSON.stringify(geoDistribution.labels) %>,
+            datasets: [{
+                label: 'Records',
+                data: <%- JSON.stringify(geoDistribution.data) %>,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
